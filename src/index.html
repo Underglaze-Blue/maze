@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Maze</title>
+  <link rel="icon" href="./favicon.ico">
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+      }
+
+      body {
+          padding-top: 200px;
+      }
+
+      #cells {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          flex-direction: column;
+      }
+
+      .row {
+          display: flex;
+      }
+
+      .cell {
+          width: 20px;
+          height: 20px;
+          position: relative;
+          margin-left: -1px;
+          margin-top: -1px;
+          overflow: hidden;
+      }
+
+      .cell > .line {
+          position: absolute;
+      }
+
+      .line-top, .line-bottom {
+          width: 21px;
+          top: 0;
+          height: 1px;
+          left: 0;
+          background: #000;
+      }
+
+      .line-bottom {
+          top: auto;
+          bottom: 0;
+      }
+
+      .line-left, .line-right {
+          width: 1px;
+          top: 0;
+          height: 21px;
+          left: 0;
+          background: #000;
+      }
+
+      .line-right {
+          left: auto;
+          right: 0;
+      }
+
+  </style>
+</head>
+<body>
+<script>
+  // 创建单元格
+  const createCell = (x, y) => ({
+    x,
+    y,
+    top: false,
+    right: false,
+    bottom: false,
+    left: false,
+    isVisited: false
+  })
+
+  // 类
+  class Maze {
+    constructor(row, col) {
+      this.row = row
+      this.col = col
+      /**
+       * 这个属性用于存放进行过 breakWall 的单元格
+       * 当某个单元格周围不能再拓展时,我们会回头重之前 破墙过的格子中选一个再重复判断
+       **/
+      this.roomline = []
+      // 存放所有的格子
+      this.mazeCells = []
+
+      this.init()
+    }
+
+    init() {
+      // 遍历生成格子二维数组
+      for (let i = 0; i < this.row; i++) {
+        this.mazeCells[i] = []
+        for (let j = 0; j < this.col; j++) {
+          this.mazeCells[i].push(createCell(j, i))
+        }
+      }
+
+      const startCell = {x: 0, y: 0}
+
+      // 设置起点与终点
+      this.roomline.push(startCell)
+      this.mazeCells[0][0].left = true
+      this.mazeCells[this.row - 1][this.col - 1].right = true
+
+      // 从 0,0 开始
+      this.calcCells(startCell)
+    }
+
+
+    // 边界检测，查看上下左右是否越界，同时查看相邻的单元格是否访问过
+    calcCells({x, y}) {
+      /**
+       * y0 y1 y2 y3
+       * □ □ □ □ □   x0
+       * □ □ ○ □ □   x1
+       * □ □ □ □ □   x2
+       * */
+      const neighbors = []
+      // 如果当前元素的 上 还有值，并且 没有被访问过，则 push
+      // 找○的上方
+      if (x - 1 >= 0 && !this.mazeCells[x - 1][y].isVisited) {
+        neighbors.push({x: x - 1, y})
+      }
+      // 如果当前元素的 下 还有值，并且 没有被访问过，则 push
+      // 找○的下方
+      if (x + 1 < this.row && !this.mazeCells[x + 1][y].isVisited) {
+        neighbors.push({x: x + 1, y})
+      }
+      // 找○的左方
+      if (y - 1 >= 0 && !this.mazeCells[x][y - 1].isVisited) {
+        neighbors.push({x, y: y - 1})
+      }
+      // 找○的右方
+      if (y + 1 < this.col && !this.mazeCells[x][y + 1].isVisited) {
+        neighbors.push({x, y: y + 1})
+      }
+
+      if (neighbors.length) {
+        const current = {x, y}
+        // 随机找一个 邻居 开始继续
+        const next = neighbors[Math.floor(Math.random() * neighbors.length)]
+        this.mazeCells[next.x][next.y].isVisited = true
+        this.roomline.push({x: next.x, y: next.y})
+        this.calcCells(next)
+        this.breakWall(current, next)
+      } else {
+        /**
+         * 周围不能再进行拓展时，两种处理方案
+         * 1. 后退一格从上一个格的状态，再去判断，如果不能拓展则重复后退
+         * 2. 从以前拓展过的格子中随机抽出一个
+         * 在寻找可用格子的过程中，roomline 会递归拓展可用的格子堆积不可用的格子
+         * 最后会把所有可用的点拓展完毕后，逐步删除不可拓展的格子
+         **/
+        if (this.roomline.length) {
+          const next = this.roomline.splice(Math.floor(Math.random() * this.roomline.length), 1)[0]
+          this.calcCells(next)
+        }
+      }
+    }
+
+    // 用来进行设置新的墙属性
+    breakWall(cur, next) {
+      if (cur.x < next.x) {
+        this.mazeCells[cur.x][cur.y].bottom = true
+        this.mazeCells[next.x][next.y].top = true
+      }
+      if (cur.x > next.x) {
+        this.mazeCells[cur.x][cur.y].top = true
+        this.mazeCells[next.x][next.y].bottom = true
+      }
+      if (cur.y < next.y) {
+        this.mazeCells[cur.x][cur.y].right = true
+        this.mazeCells[next.x][next.y].left = true
+      }
+      if (cur.y > next.y) {
+        this.mazeCells[cur.x][cur.y].left = true
+        this.mazeCells[next.x][next.y].right = true
+      }
+    }
+  }
+
+  const createMaze = mazeArr => {
+    const wrapper = document.createElement('div')
+    wrapper.id = 'cells'
+
+    mazeArr.forEach(rowArr => {
+      const row = document.createElement('div');
+      row.className = 'row'
+      rowArr.forEach(cell => {
+        const col = document.createElement('div')
+
+        const lineTop = document.createElement('div');
+        const lineRight = document.createElement('div');
+        const lineBottom = document.createElement('div');
+        const lineLeft = document.createElement('div');
+
+        lineTop.className = 'line line-top';
+        lineRight.className = 'line line-right';
+        lineBottom.className = 'line line-bottom';
+        lineLeft.className = 'line line-left';
+
+        (!cell.top) && (col.appendChild(lineTop));
+        (!cell.right) && (col.appendChild(lineRight));
+        (!cell.bottom) && (col.appendChild(lineBottom));
+        (!cell.left) && (col.appendChild(lineLeft));
+
+        col.className = 'cell';
+
+        row.appendChild(col)
+      })
+      wrapper.appendChild(row)
+    })
+    document.body.appendChild(wrapper)
+  }
+
+  const maze = new Maze(40, 40);
+  createMaze(maze.mazeCells)
+</script>
+</body>
+</html>
