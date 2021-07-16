@@ -12,6 +12,7 @@
 
       body {
           padding-top: 200px;
+          background: #F0F1EB;
       }
 
       #cells {
@@ -64,9 +65,35 @@
           right: 0;
       }
 
+      .btn-wrapper {
+          display: flex;
+          width: 80vw;
+          height: 80px;
+          align-items: center;
+          justify-content: space-between;
+          position: fixed;
+          top: 40px;
+          left: 10vw;
+      }
+
+      .btn-wrapper button {
+          width: 120px;
+          height: 64px;
+          outline: none;
+          border: none;
+          background: coral;
+          color: azure;
+      }
+
   </style>
 </head>
 <body>
+<div class="btn-wrapper">
+  <button onclick="resetMaze(1)">20 * 20</button>
+  <button onclick="resetMaze(2)">30 * 30</button>
+  <button onclick="resetMaze(3)">40 * 40</button>
+  <button onclick="resetMaze(4)">50 * 50</button>
+</div>
 <script>
   // 创建单元格
   const createCell = (x, y) => ({
@@ -224,6 +251,27 @@
 
   const maze = new Maze(40, 40);
   createMaze(maze.mazeCells)
+
+  function resetMaze(type) {
+    document.body.removeChild(document.querySelector('#cells'))
+    let size = 20
+    switch (type) {
+      case 1:
+        size = 20;
+        break;
+      case 2:
+        size = 30;
+        break;
+      case 3:
+        size = 40;
+        break;
+      case 4:
+        size = 50;
+        break;
+    }
+    const maze = new Maze(size, size);
+    createMaze(maze.mazeCells)
+  }
 </script>
 </body>
 </html>
